@@ -1,0 +1,3258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Timetable Management System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* Updated Color Theme */
+            --primary: #6366f1; /* Indigo */
+            --secondary: #8b5cf6; /* Purple */
+            --success: #10b981; /* Emerald */
+            --info: #0ea5e9; /* Sky */
+            --warning: #f59e0b; /* Amber */
+            --danger: #ef4444; /* Red */
+            --light: #f8fafc; /* Slate-50 */
+            --dark: #1e293b; /* Slate-900 */
+            --bg: #f1f5f9; /* Slate-100 */
+            --card: #ffffff; /* White */
+            --text: #0f172a; /* Slate-900 */
+            --border: #e2e8f0; /* Slate-200 */
+            --shadow: rgba(0, 0, 0, 0.1);
+            
+            /* Activity Colors */
+            --available-color: #10b981; /* Emerald */
+            --booked-color: #ef4444; /* Red */
+            --meeting-color: #6366f1; /* Indigo */
+            --task-color: #f59e0b; /* Amber */
+            --break-color: #8b5cf6; /* Purple */
+            
+            /* Gradient Colors */
+            --gradient-1: linear-gradient(135deg, #6366f1, #8b5cf6);
+            --gradient-2: linear-gradient(135deg, #10b981, #0ea5e9);
+            --gradient-3: linear-gradient(135deg, #f59e0b, #ef4444);
+            --gradient-4: linear-gradient(135deg, #8b5cf6, #ec4899); /* Evening */
+            --gradient-5: linear-gradient(135deg, #1e293b, #4b5563); /* Night */
+            
+            /* Background Animation Colors */
+            --bg-start: #f1f5f9;
+            --bg-end: #e2e8f0;
+        }
+        
+        [data-theme="dark"] {
+            --bg: #0f172a; /* Slate-900 */
+            --card: #1e293b; /* Slate-800 */
+            --text: #f8fafc; /* Slate-50 */
+            --border: #334155; /* Slate-700 */
+            --shadow: rgba(0, 0, 0, 0.3);
+            --bg-start: #0f172a;
+            --bg-end: #1e293b;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            transition: all 0.3s ease;
+            overflow-x: hidden;
+        }
+        
+        /* Animated Background */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
+            background-size: 200% 200%;
+            z-index: -1;
+            animation: backgroundAnimation 20s ease infinite;
+        }
+        
+        @keyframes backgroundAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            animation: fadeIn 0.8s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card {
+            background-color: var(--card);
+            border-radius: 15px;
+            box-shadow: 0 10px 25px var(--shadow);
+            padding: 30px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+            animation: slideUp 0.6s ease;
+            border: 1px solid var(--border);
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px var(--shadow);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 35px;
+            animation: slideDown 0.7s ease;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo i {
+            font-size: 2.5rem;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .logo h1 {
+            font-size: 2rem;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 22px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            font-size: 0.95rem;
+        }
+        
+        .btn::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.5s ease;
+            z-index: -1;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary {
+            background: var(--gradient-1);
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+        
+        .btn-secondary {
+            background: var(--gradient-1);
+            color: white;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+        }
+        
+        .btn-success {
+            background: var(--gradient-2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-info {
+            background: var(--gradient-2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+        }
+        
+        .btn-info:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(14, 165, 233, 0.4);
+        }
+        
+        .btn-warning {
+            background: var(--gradient-3);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+        
+        .btn-warning:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+        }
+        
+        .btn-danger {
+            background: var(--gradient-3);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+        
+        .btn-danger:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+        }
+        
+        .btn-light {
+            background-color: var(--light);
+            color: var(--dark);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-light:hover {
+            background-color: #f1f5f9;
+            transform: translateY(-3px);
+        }
+        
+        .btn-dark {
+            background-color: var(--dark);
+            color: white;
+        }
+        
+        .btn-dark:hover {
+            background-color: #0f172a;
+            transform: translateY(-3px);
+        }
+        
+        .form-group {
+            margin-bottom: 22px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background-color: var(--card);
+            color: var(--text);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .timetable-grid {
+            display: grid;
+            gap: 1px;
+            background-color: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            overflow: hidden;
+            animation: fadeIn 1s ease;
+        }
+        
+        .timetable-header {
+            background: var(--gradient-1);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .timetable-time {
+            background: var(--gradient-1);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        .timetable-cell {
+            background-color: var(--card);
+            padding: 15px;
+            min-height: 90px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+            margin: 2px;
+        }
+        
+        .timetable-cell::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+        
+        .timetable-cell:hover::before {
+            transform: translateX(0);
+        }
+        
+        .timetable-cell:hover {
+            transform: scale(1.05);
+            z-index: 1;
+            box-shadow: 0 8px 20px var(--shadow);
+        }
+        
+        .timetable-cell.available {
+            background: var(--gradient-2);
+            color: white;
+        }
+        
+        .timetable-cell.booked {
+            background: var(--gradient-3);
+            color: white;
+        }
+        
+        .timetable-cell.meeting {
+            background: var(--gradient-1);
+            color: white;
+        }
+        
+        .timetable-cell.task {
+            background: var(--gradient-3);
+            color: white;
+        }
+        
+        .timetable-cell.break {
+            background: var(--gradient-1);
+            color: white;
+        }
+        
+        .timetable-cell-content {
+            text-align: center;
+            font-weight: 500;
+            z-index: 1;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .page {
+            display: none;
+            animation: pageTransition 0.5s ease;
+        }
+        
+        @keyframes pageTransition {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        .welcome-message {
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+            animation: fadeIn 1s ease;
+        }
+        
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 35px;
+        }
+        
+        .dashboard-card {
+            background-color: var(--card);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 25px var(--shadow);
+            text-align: center;
+            transition: all 0.3s ease;
+            animation: slideUp 0.6s ease;
+            animation-fill-mode: both;
+            border: 1px solid var(--border);
+        }
+        
+        .dashboard-card:nth-child(1) { animation-delay: 0.1s; }
+        .dashboard-card:nth-child(2) { animation-delay: 0.2s; }
+        .dashboard-card:nth-child(3) { animation-delay: 0.3s; }
+        .dashboard-card:nth-child(4) { animation-delay: 0.4s; }
+        
+        .dashboard-card:hover {
+            transform: translateY(-12px);
+            box-shadow: 0 20px 40px var(--shadow);
+        }
+        
+        .dashboard-card i {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .dashboard-card:nth-child(1) i { background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .dashboard-card:nth-child(2) i { background: var(--gradient-2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .dashboard-card:nth-child(3) i { background: var(--gradient-3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .dashboard-card:nth-child(4) i { background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .dashboard-card:hover i {
+            transform: scale(1.2) rotate(5deg);
+        }
+        
+        .dashboard-card h3 {
+            margin-bottom: 12px;
+            color: var(--text);
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        
+        .dashboard-card p {
+            color: var(--text);
+            opacity: 0.8;
+        }
+        
+        .search-container {
+            margin-bottom: 25px;
+            display: flex;
+            gap: 12px;
+            animation: slideUp 0.7s ease;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background-color: var(--card);
+            color: var(--text);
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+        
+        .search-btn {
+            padding: 14px 18px;
+            background: var(--gradient-1);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .search-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+        }
+        
+        .theme-toggle {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--gradient-1);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+            z-index: 1000;
+            transition: all 0.3s ease;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-12px); }
+            60% { transform: translateY(-6px); }
+        }
+        
+        .theme-toggle:hover {
+            transform: scale(1.1);
+        }
+        
+        .notification {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            padding: 18px 25px;
+            background: var(--gradient-2);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+            z-index: 1000;
+            display: none;
+            animation: slideInRight 0.5s ease;
+        }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .notification.show {
+            display: block;
+            animation: slideInRight 0.5s, slideOutRight 0.5s 2.5s;
+        }
+        
+        @keyframes slideOutRight {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(100px); }
+        }
+        
+        .about-section {
+            margin-bottom: 25px;
+            animation: fadeIn 1s ease;
+        }
+        
+        .about-section h2 {
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 18px;
+            font-weight: 700;
+        }
+        
+        .about-section p {
+            line-height: 1.7;
+            margin-bottom: 18px;
+            color: var(--text);
+        }
+        
+        .about-section ul {
+            margin-left: 25px;
+            line-height: 1.9;
+        }
+        
+        .filter-container {
+            display: flex;
+            gap: 18px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            animation: slideUp 0.7s ease;
+        }
+        
+        .filter-group {
+            flex: 1;
+            min-width: 220px;
+        }
+        
+        .staff-management {
+            margin-top: 25px;
+            animation: fadeIn 1s ease;
+        }
+        
+        .staff-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+        
+        .staff-item {
+            background: var(--gradient-1);
+            color: white;
+            padding: 12px 18px;
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+        }
+        
+        .staff-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+        }
+        
+        .staff-item button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .staff-item button:hover {
+            transform: scale(1.2);
+        }
+        
+        .hero-section {
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1521791136064-7986c2920216?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: white;
+            padding: 120px 0;
+            text-align: center;
+            border-radius: 20px;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-section::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--gradient-1);
+            z-index: 1;
+            opacity: 0.8;
+        }
+        
+        .hero-section > * {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .hero-section h1 {
+            font-size: 4rem;
+            margin-bottom: 25px;
+            animation: fadeInDown 1s ease;
+            font-weight: 800;
+            text-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .hero-section p {
+            font-size: 1.4rem;
+            max-width: 800px;
+            margin: 0 auto 35px;
+            animation: fadeInUp 1s ease;
+            line-height: 1.6;
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .shift-indicator {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+            color: white;
+        }
+        
+        .shift-morning {
+            background: var(--gradient-2);
+        }
+        
+        .shift-afternoon {
+            background: var(--gradient-3);
+        }
+        
+        .shift-evening {
+            background: var(--gradient-4);
+        }
+        
+        .shift-night {
+            background: var(--gradient-5);
+        }
+        
+        .feature-card {
+            background-color: var(--card);
+            border-radius: 15px;
+            padding: 35px;
+            text-align: center;
+            box-shadow: 0 10px 25px var(--shadow);
+            transition: all 0.3s ease;
+            height: 100%;
+            animation: slideUp 0.6s ease;
+            animation-fill-mode: both;
+            border: 1px solid var(--border);
+        }
+        
+        .feature-card:nth-child(1) { animation-delay: 0.1s; }
+        .feature-card:nth-child(2) { animation-delay: 0.2s; }
+        .feature-card:nth-child(3) { animation-delay: 0.3s; }
+        .feature-card:nth-child(4) { animation-delay: 0.4s; }
+        
+        .feature-card:hover {
+            transform: translateY(-18px);
+            box-shadow: 0 25px 50px var(--shadow);
+        }
+        
+        .feature-card i {
+            font-size: 3.5rem;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:nth-child(1) i { background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .feature-card:nth-child(2) i { background: var(--gradient-2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .feature-card:nth-child(3) i { background: var(--gradient-3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .feature-card:nth-child(4) i { background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .feature-card:hover i {
+            transform: scale(1.2) rotate(8deg);
+        }
+        
+        .feature-card h3 {
+            margin-bottom: 18px;
+            color: var(--text);
+            font-weight: 700;
+            font-size: 1.3rem;
+        }
+        
+        .feature-card p {
+            color: var(--text);
+            line-height: 1.7;
+            opacity: 0.9;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 35px;
+            margin-bottom: 50px;
+        }
+        
+        .cta-section {
+            background: var(--gradient-1);
+            color: white;
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+            animation: pulse 2s infinite;
+        }
+        
+        .cta-section::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+            z-index: 1;
+        }
+        
+        .cta-section > * {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .cta-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 25px;
+            animation: fadeIn 1s ease;
+            font-weight: 800;
+        }
+        
+        .cta-section p {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto 35px;
+            animation: fadeIn 1.2s ease;
+            line-height: 1.6;
+        }
+        
+        .btn-cta {
+            background-color: white;
+            color: var(--primary);
+            padding: 18px 35px;
+            border-radius: 35px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: fadeIn 1.4s ease;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-cta:hover {
+            transform: scale(1.08);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Time Management Styles */
+        .time-management {
+            margin-top: 25px;
+            animation: fadeIn 1s ease;
+        }
+        
+        .time-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding-right: 10px;
+        }
+        
+        .time-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .time-list::-webkit-scrollbar-track {
+            background: var(--border);
+            border-radius: 10px;
+        }
+        
+        .time-list::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+        
+        .time-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: var(--light);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .time-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px var(--shadow);
+        }
+        
+        .time-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .time-info span {
+            font-weight: 600;
+        }
+        
+        .time-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .time-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--primary);
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            padding: 8px;
+            border-radius: 5px;
+        }
+        
+        .time-actions button:hover {
+            transform: scale(1.2);
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+        
+        .time-actions button.delete {
+            color: var(--danger);
+        }
+        
+        .time-actions button.delete:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+        
+        .add-time-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .add-time-form input {
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .add-time-form select {
+            flex: 1;
+            min-width: 120px;
+            padding: 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background-color: var(--card);
+            color: var(--text);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        /* Floating particles animation */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--gradient-1);
+            animation: float 15s infinite linear;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.8;
+            }
+            90% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+        
+        /* Loading animation */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .loader-circle {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(99, 102, 241, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Additional styles for modals */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background-color: var(--card);
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px var(--shadow);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            background-color: var(--card);
+            z-index: 10;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-close:hover {
+            background-color: var(--border);
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            position: sticky;
+            bottom: 0;
+            background-color: var(--card);
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+        
+        /* Staff edit modal */
+        .staff-edit-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .staff-edit-form input {
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background-color: var(--card);
+            color: var(--text);
+        }
+        
+        /* Confirmation modal */
+        .confirmation-modal .modal-content {
+            max-width: 450px;
+        }
+        
+        .confirmation-modal .modal-body {
+            text-align: center;
+            padding: 30px 20px;
+        }
+        
+        .confirmation-modal .modal-body i {
+            font-size: 3rem;
+            color: var(--danger);
+            margin-bottom: 20px;
+        }
+        
+        .confirmation-modal .modal-body h3 {
+            margin-bottom: 15px;
+            color: var(--text);
+        }
+        
+        .confirmation-modal .modal-body p {
+            margin-bottom: 25px;
+            color: var(--text);
+            opacity: 0.8;
+        }
+        
+        .confirmation-modal .modal-footer {
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        /* View Navigation Styles */
+        .view-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .view-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .view-buttons {
+            display: flex;
+            gap: 5px;
+            background-color: var(--border);
+            border-radius: 30px;
+            padding: 5px;
+        }
+        
+        .view-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            background: transparent;
+            color: var(--text);
+        }
+        
+        .view-btn.active {
+            background: var(--gradient-1);
+            color: white;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+        }
+        
+        .view-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .nav-buttons-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .current-date-display {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 1.1rem;
+            text-align: center;
+            padding: 8px 16px;
+            background-color: var(--border);
+            border-radius: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .timetable-grid {
+                grid-template-columns: 60px repeat(5, 1fr);
+                font-size: 0.9rem;
+            }
+            
+            .timetable-cell {
+                min-height: 70px;
+                padding: 10px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 18px;
+            }
+            
+            .nav-buttons {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .dashboard-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-container {
+                flex-direction: column;
+            }
+            
+            .hero-section h1 {
+                font-size: 2.5rem;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .cta-section {
+                padding: 35px 20px;
+            }
+            
+            .cta-section h2 {
+                font-size: 2rem;
+            }
+            
+            .add-time-form {
+                flex-direction: column;
+            }
+            
+            .modal-content {
+                padding: 20px;
+                max-height: 90vh;
+            }
+            
+            .modal-header {
+                padding-bottom: 10px;
+            }
+            
+            .modal-footer {
+                padding-top: 10px;
+            }
+            
+            .view-navigation {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .view-controls {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .current-date-display {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Animation -->
+    <div class="loader" id="loader">
+        <div class="loader-circle"></div>
+    </div>
+    
+    <!-- Floating Particles -->
+    <div class="particles" id="particles"></div>
+    
+    <div id="app">
+        <!-- Welcome Page -->
+        <div id="welcomePage" class="page active">
+            <div class="container">
+                <div class="hero-section">
+                    <h1>Faculty Timetable Manager</h1>
+                    <p>A comprehensive solution for managing faculty schedules with ease and efficiency</p>
+                    <button class="btn-cta" onclick="showPage('loginPage')">
+                        Get Started <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h3>Easy Scheduling</h3>
+                        <p>Create and manage your weekly timetable with an intuitive interface designed specifically for faculty members.</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-users"></i>
+                        <h3>Staff Management</h3>
+                        <p>Add and manage multiple faculty members in one centralized system for better coordination.</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-filter"></i>
+                        <h3>Advanced Filtering</h3>
+                        <p>Filter your schedule by activity type, shift time, or search for specific events quickly.</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-file-pdf"></i>
+                        <h3>Export to PDF</h3>
+                        <p>Download your timetable as a PDF file for printing, sharing, or record-keeping purposes.</p>
+                    </div>
+                </div>
+                
+                <div class="cta-section">
+                    <h2>Ready to Streamline Your Schedule?</h2>
+                    <p>Join hundreds of faculty members who are already using our system to save time and stay organized.</p>
+                    <button class="btn-cta" onclick="showPage('loginPage')">
+                        Login Now <i class="fas fa-sign-in-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Login Page -->
+        <div id="loginPage" class="page">
+            <div class="container">
+                <div class="card" style="max-width: 500px; margin: 120px auto;">
+                    <div class="logo" style="justify-content: center; margin-bottom: 35px;">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h1>Timetable Manager</h1>
+                    </div>
+                    <h2 style="text-align: center; margin-bottom: 35px; color: var(--text);">Faculty Login</h2>
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <button class="btn btn-light" onclick="showPage('welcomePage')">
+                            <i class="fas fa-arrow-left"></i> Back to Welcome
+                        </button>
+                    </div>
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label for="username">Faculty Name or ID</label>
+                            <input type="text" id="username" class="form-control" placeholder="Enter your name or ID" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dashboard Page -->
+        <div id="dashboardPage" class="page">
+            <div class="container">
+                <div class="header">
+                    <div class="logo">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h1>Timetable Manager</h1>
+                    </div>
+                    <div class="nav-buttons">
+                        <button class="btn btn-primary" onclick="showPage('editPage')">
+                            <i class="fas fa-edit"></i> Edit Timetable
+                        </button>
+                        <button class="btn btn-secondary" onclick="showPage('viewPage')">
+                            <i class="fas fa-eye"></i> View Timetable
+                        </button>
+                        <button class="btn btn-info" onclick="showPage('aboutPage')">
+                            <i class="fas fa-info-circle"></i> About
+                        </button>
+                        <button class="btn btn-danger" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="welcome-message">
+                    Welcome, <span id="welcomeUsername"></span>!
+                </div>
+                
+                <div class="dashboard-cards">
+                    <div class="dashboard-card">
+                        <i class="fas fa-clock"></i>
+                        <h3>Manage Schedule</h3>
+                        <p>Create and edit your weekly timetable</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <i class="fas fa-calendar-check"></i>
+                        <h3>View Timetable</h3>
+                        <p>Check your weekly schedule at a glance</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <i class="fas fa-file-pdf"></i>
+                        <h3>Export to PDF</h3>
+                        <p>Download your timetable as a PDF file</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <i class="fas fa-moon"></i>
+                        <h3>Dark Mode</h3>
+                        <p>Toggle dark mode for comfortable viewing</p>
+                    </div>
+                </div>
+                
+                <div class="card staff-management">
+                    <h2 style="margin-bottom: 25px; color: var(--text);">Staff Management</h2>
+                    <div class="form-group">
+                        <label for="newStaff">Add New Staff</label>
+                        <div style="display: flex; gap: 12px;">
+                            <input type="text" id="newStaff" class="form-control" placeholder="Enter staff name">
+                            <button class="btn btn-primary" onclick="addStaff()">Add</button>
+                        </div>
+                    </div>
+                    <div class="staff-list" id="staffList">
+                        <!-- Staff list will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Edit Timetable Page -->
+        <div id="editPage" class="page">
+            <div class="container">
+                <div class="header">
+                    <div class="logo">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h1>Timetable Manager</h1>
+                    </div>
+                    <div class="nav-buttons">
+                        <button class="btn btn-primary" onclick="showPage('dashboardPage')">
+                            <i class="fas fa-home"></i> Dashboard
+                        </button>
+                        <button class="btn btn-secondary" onclick="showPage('viewPage')">
+                            <i class="fas fa-eye"></i> View Timetable
+                        </button>
+                        <button class="btn btn-success" onclick="saveTimetable()">
+                            <i class="fas fa-save"></i> Save Timetable
+                        </button>
+                        <button class="btn btn-danger" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2 style="margin-bottom: 25px; color: var(--text);">Edit Your Timetable</h2>
+                    <p style="margin-bottom: 25px; color: var(--text);">Click on any time slot to edit your schedule. Select the type of activity and add a description.</p>
+                    
+                    <!-- View Navigation Controls -->
+                    <div class="view-navigation">
+                        <div class="view-controls">
+                            <div class="view-buttons">
+                                <button class="view-btn" id="dailyViewBtn" onclick="changeView('daily')">Daily</button>
+                                <button class="view-btn active" id="weeklyViewBtn" onclick="changeView('weekly')">Weekly</button>
+                                <button class="view-btn" id="monthlyViewBtn" onclick="changeView('monthly')">Monthly</button>
+                            </div>
+                        </div>
+                        
+                        <div class="current-date-display" id="currentDateDisplay">
+                            <!-- Current date/week/month will be displayed here -->
+                        </div>
+                        
+                        <div class="nav-buttons-group">
+                            <button class="btn btn-light" id="prevBtn" onclick="navigatePeriod('prev')">
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </button>
+                            <button class="btn btn-light" id="nextBtn" onclick="navigatePeriod('next')">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </button>
+                            <button class="btn btn-light" onclick="goToToday()">
+                                <i class="fas fa-calendar-day"></i> Today
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 25px; display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button class="btn btn-danger" onclick="clearTimetable()">
+                            <i class="fas fa-trash"></i> Clear All
+                        </button>
+                        <button class="btn btn-info" onclick="openTimeManagementModal()">
+                            <i class="fas fa-clock"></i> Modify Timings
+                        </button>
+                    </div>
+                    
+                    <div class="timetable-grid" id="editTimetableGrid">
+                        <!-- Grid will be generated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- View Timetable Page -->
+        <div id="viewPage" class="page">
+            <div class="container">
+                <div class="header">
+                    <div class="logo">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h1>Timetable Manager</h1>
+                    </div>
+                    <div class="nav-buttons">
+                        <button class="btn btn-primary" onclick="showPage('dashboardPage')">
+                            <i class="fas fa-home"></i> Dashboard
+                        </button>
+                        <button class="btn btn-secondary" onclick="showPage('editPage')">
+                            <i class="fas fa-edit"></i> Edit Timetable
+                        </button>
+                        <button class="btn btn-info" onclick="exportToPDF()">
+                            <i class="fas fa-file-pdf"></i> Export to PDF
+                        </button>
+                        <button class="btn btn-danger" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2 style="margin-bottom: 25px; color: var(--text);">Your Weekly Timetable</h2>
+                    
+                    <div class="filter-container">
+                        <div class="filter-group">
+                            <label for="activityFilter">Filter by Activity</label>
+                            <select id="activityFilter" class="form-control" onchange="filterByActivity()">
+                                <option value="all">All Activities</option>
+                                <option value="available">Available</option>
+                                <option value="booked">Booked</option>
+                                <option value="meeting">Meeting</option>
+                                <option value="task">Task</option>
+                                <option value="break">Break</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="shiftFilter">Filter by Shift</label>
+                            <select id="shiftFilter" class="form-control" onchange="filterByShift()">
+                                <option value="all">All Shifts</option>
+                                <option value="morning">Morning (9AM-12PM)</option>
+                                <option value="afternoon">Afternoon (1PM-5PM)</option>
+                                <option value="evening">Evening (6PM-9PM)</option>
+                                <option value="night">Night (10PM-6AM)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="search-container">
+                        <input type="text" id="searchInput" class="search-input" placeholder="Search by keyword...">
+                        <button class="search-btn" onclick="searchTimetable()">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                        <button class="btn btn-light" onclick="clearSearch()">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
+                    
+                    <div class="timetable-grid" id="viewTimetableGrid">
+                        <!-- Grid will be generated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- About Page -->
+        <div id="aboutPage" class="page">
+            <div class="container">
+                <div class="header">
+                    <div class="logo">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h1>Timetable Manager</h1>
+                    </div>
+                    <div class="nav-buttons">
+                        <button class="btn btn-primary" onclick="showPage('dashboardPage')">
+                            <i class="fas fa-home"></i> Dashboard
+                        </button>
+                        <button class="btn btn-secondary" onclick="showPage('editPage')">
+                            <i class="fas fa-edit"></i> Edit Timetable
+                        </button>
+                        <button class="btn btn-info" onclick="showPage('viewPage')">
+                            <i class="fas fa-eye"></i> View Timetable
+                        </button>
+                        <button class="btn btn-danger" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2 style="margin-bottom: 25px;">About Timetable Management System</h2>
+                    
+                    <div class="about-section">
+                        <h3>System Overview</h3>
+                        <p>This is a personal timetable management system designed for faculty members to easily create, view, and manage their weekly schedules. The system is built using HTML, CSS, and JavaScript with local storage to save data.</p>
+                    </div>
+                    
+                    <div class="about-section">
+                        <h3>Key Features</h3>
+                        <ul>
+                            <li>Simple and intuitive interface for managing your timetable</li>
+                            <li>Color-coded activities for easy identification</li>
+                            <li>Ability to add different types of activities (meetings, tasks, breaks, etc.)</li>
+                            <li>Advanced filtering by activity type and shift time</li>
+                            <li>Search functionality to find specific activities</li>
+                            <li>Export your timetable to PDF for printing or sharing</li>
+                            <li>Dark mode for comfortable viewing during night shifts</li>
+                            <li>Mobile-friendly design for access on the go</li>
+                            <li>Staff management to handle multiple faculty members</li>
+                            <li>Customizable time slots to fit your schedule</li>
+                            <li>Daily, weekly, and monthly views for better planning</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="about-section">
+                        <h3>How to Use</h3>
+                        <ol>
+                            <li>Login with your faculty name or ID</li>
+                            <li>From the dashboard, click "Edit Timetable" to create or modify your schedule</li>
+                            <li>Switch between Daily, Weekly, or Monthly views using the view controls</li>
+                            <li>Use Previous/Next buttons to navigate between different time periods</li>
+                            <li>Click on any time slot to add an activity</li>
+                            <li>Select the activity type and add a description</li>
+                            <li>Customize your time slots by clicking "Modify Timings"</li>
+                            <li>Save your timetable when finished</li>
+                            <li>View your timetable anytime from the dashboard</li>
+                            <li>Use filters to focus on specific activities or shifts</li>
+                            <li>Export your timetable to PDF if needed</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="about-section">
+                        <h3>Activity Types</h3>
+                        <ul>
+                            <li><strong style="color: var(--available-color);">Available:</strong> Free time slots</li>
+                            <li><strong style="color: var(--booked-color);">Booked:</strong> Reserved time slots</li>
+                            <li><strong style="color: var(--meeting-color);">Meeting:</strong> Scheduled meetings</li>
+                            <li><strong style="color: var(--task-color);">Task:</strong> Work tasks or assignments</li>
+                            <li><strong style="color: var(--break-color);">Break:</strong> Break times or personal time</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="about-section">
+                        <h3>Shift Types</h3>
+                        <ul>
+                            <li><strong style="color: var(--gradient-2);">Morning:</strong> 9AM-12PM</li>
+                            <li><strong style="color: var(--gradient-3);">Afternoon:</strong> 1PM-5PM</li>
+                            <li><strong style="color: var(--gradient-4);">Evening:</strong> 6PM-9PM</li>
+                            <li><strong style="color: var(--gradient-5);">Night:</strong> 10PM-6AM</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Theme Toggle Button -->
+    <div class="theme-toggle" onclick="toggleTheme()">
+        <i class="fas fa-moon" id="themeIcon"></i>
+    </div>
+    
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
+    
+    <script>
+        // Global variables
+        let currentUser = '';
+        let timetableData = {};
+        let staffList = [];
+        let times = [
+            { time: '9:00 AM', shift: 'morning' },
+            { time: '10:00 AM', shift: 'morning' },
+            { time: '11:00 AM', shift: 'morning' },
+            { time: '12:00 PM', shift: 'morning' },
+            { time: '1:00 PM', shift: 'afternoon' },
+            { time: '2:00 PM', shift: 'afternoon' },
+            { time: '3:00 PM', shift: 'afternoon' },
+            { time: '4:00 PM', shift: 'afternoon' },
+            { time: '5:00 PM', shift: 'afternoon' },
+            { time: '6:00 PM', shift: 'evening' },
+            { time: '7:00 PM', shift: 'evening' },
+            { time: '8:00 PM', shift: 'evening' },
+            { time: '9:00 PM', shift: 'evening' },
+            { time: '10:00 PM', shift: 'night' },
+            { time: '11:00 PM', shift: 'night' }
+        ];
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        const activityTypes = [
+            { value: 'available', label: 'Available', color: 'var(--available-color)' },
+            { value: 'booked', label: 'Booked', color: 'var(--booked-color)' },
+            { value: 'meeting', label: 'Meeting', color: 'var(--meeting-color)' },
+            { value: 'task', label: 'Task', color: 'var(--task-color)' },
+            { value: 'break', label: 'Break', color: 'var(--break-color)' }
+        ];
+        
+        // View navigation variables
+        let currentView = 'weekly';
+        let currentDate = new Date();
+        let currentWeekStart = getWeekStart(new Date());
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide loader after page loads
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hidden');
+            }, 1000);
+            
+            // Create floating particles
+            createParticles();
+            
+            // Check if user is already logged in
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = savedUser;
+                document.getElementById('welcomeUsername').textContent = currentUser;
+                showPage('dashboardPage');
+                loadTimetable();
+                loadStaffList();
+                loadUserTimes();
+            } else {
+                // Show welcome page if not logged in
+                showPage('welcomePage');
+            }
+            
+            // Generate timetable grids
+            generateTimetableGrid('editTimetableGrid', true);
+            generateTimetableGrid('viewTimetableGrid', false);
+            
+            // Setup login form
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                login();
+            });
+            
+            // Setup search input
+            document.getElementById('searchInput').addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    searchTimetable();
+                }
+            });
+            
+            // Load theme preference
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                document.getElementById('themeIcon').className = 'fas fa-sun';
+                updateThemeColors();
+            }
+            
+            // Initialize view navigation
+            updateDateDisplay();
+        });
+        
+        // Create floating particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 30;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // Random position
+                const posX = Math.random() * 100;
+                const posY = Math.random() * 100;
+                
+                // Random size
+                const size = Math.random() * 8 + 4;
+                
+                // Random animation duration
+                const duration = Math.random() * 20 + 10;
+                
+                // Random delay
+                const delay = Math.random() * 5;
+                
+                // Set styles
+                particle.style.left = `${posX}%`;
+                particle.style.top = `${posY}%`;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.animationDuration = `${duration}s`;
+                particle.style.animationDelay = `${delay}s`;
+                
+                // Random gradient
+                const gradients = [
+                    'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                    'linear-gradient(135deg, #10b981, #0ea5e9)',
+                    'linear-gradient(135deg, #f59e0b, #ef4444)'
+                ];
+                const gradient = gradients[Math.floor(Math.random() * gradients.length)];
+                particle.style.background = gradient;
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // Login function
+        function login() {
+            const username = document.getElementById('username').value.trim();
+            if (username) {
+                currentUser = username;
+                localStorage.setItem('currentUser', currentUser);
+                document.getElementById('welcomeUsername').textContent = currentUser;
+                showNotification('Login successful!');
+                showPage('dashboardPage');
+                loadTimetable();
+                loadStaffList();
+                loadUserTimes();
+            }
+        }
+        
+        // Logout function
+        function logout() {
+            currentUser = '';
+            localStorage.removeItem('currentUser');
+            showNotification('You have been logged out');
+            showPage('welcomePage');
+        }
+        
+        // Show page function
+        function showPage(pageId) {
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Add a small delay to ensure smooth transition
+            setTimeout(() => {
+                document.getElementById(pageId).classList.add('active');
+                
+                // Refresh timetable grids when switching pages
+                if (pageId === 'editPage' || pageId === 'viewPage') {
+                    loadTimetable();
+                    updateDateDisplay();
+                    generateTimetableGrid('editTimetableGrid', true);
+                    generateTimetableGrid('viewTimetableGrid', false);
+                }
+            }, 100);
+        }
+        
+        // Load user's custom times
+        function loadUserTimes() {
+            const savedTimes = localStorage.getItem(`times_${currentUser}`);
+            if (savedTimes) {
+                times = JSON.parse(savedTimes);
+            }
+            // Regenerate grids with updated times
+            generateTimetableGrid('editTimetableGrid', true);
+            generateTimetableGrid('viewTimetableGrid', false);
+        }
+        
+        // Save user's custom times
+        function saveUserTimes() {
+            localStorage.setItem(`times_${currentUser}`, JSON.stringify(times));
+        }
+        
+        // Generate timetable grid
+        function generateTimetableGrid(containerId, isEditable) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            if (currentView === 'daily') {
+                generateDailyView(container, isEditable);
+            } else if (currentView === 'weekly') {
+                generateWeeklyView(container, isEditable);
+            } else if (currentView === 'monthly') {
+                generateMonthlyView(container, isEditable);
+            }
+        }
+        
+        // Generate daily view
+        function generateDailyView(container, isEditable) {
+            // Add header row
+            const headerCell = document.createElement('div');
+            headerCell.className = 'timetable-header';
+            headerCell.textContent = 'Time';
+            container.appendChild(headerCell);
+            
+            const dayHeader = document.createElement('div');
+            dayHeader.className = 'timetable-header';
+            const dayName = getDayName(currentDate);
+            dayHeader.textContent = `${dayName} ${formatDate(currentDate)}`;
+            container.appendChild(dayHeader);
+            
+            // Add time slots
+            times.forEach(timeObj => {
+                // Time label
+                const timeCell = document.createElement('div');
+                timeCell.className = 'timetable-time';
+                timeCell.innerHTML = `${timeObj.time} <span class="shift-indicator shift-${timeObj.shift}">${timeObj.shift}</span>`;
+                container.appendChild(timeCell);
+                
+                // Day cell
+                const cell = document.createElement('div');
+                cell.className = 'timetable-cell';
+                cell.dataset.day = dayName;
+                cell.dataset.time = timeObj.time;
+                cell.dataset.shift = timeObj.shift;
+                cell.dataset.date = formatDate(currentDate);
+                
+                if (isEditable) {
+                    cell.addEventListener('click', function() {
+                        openEditModal(dayName, timeObj.time, formatDate(currentDate));
+                    });
+                }
+                
+                const cellContent = document.createElement('div');
+                cellContent.className = 'timetable-cell-content';
+                cell.appendChild(cellContent);
+                
+                container.appendChild(cell);
+            });
+            
+            // Update grid template for daily view
+            container.style.gridTemplateColumns = '80px 1fr';
+        }
+        
+        // Generate weekly view
+        function generateWeeklyView(container, isEditable) {
+            // Add header row
+            const headerCell = document.createElement('div');
+            headerCell.className = 'timetable-header';
+            headerCell.textContent = 'Time';
+            container.appendChild(headerCell);
+            
+            // Get week days
+            const weekDays = getWeekDays(currentWeekStart);
+            
+            weekDays.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'timetable-header';
+                dayHeader.textContent = `${day.name} ${day.date}`;
+                container.appendChild(dayHeader);
+            });
+            
+            // Add time slots
+            times.forEach(timeObj => {
+                // Time label
+                const timeCell = document.createElement('div');
+                timeCell.className = 'timetable-time';
+                timeCell.innerHTML = `${timeObj.time} <span class="shift-indicator shift-${timeObj.shift}">${timeObj.shift}</span>`;
+                container.appendChild(timeCell);
+                
+                // Day cells
+                weekDays.forEach(day => {
+                    const cell = document.createElement('div');
+                    cell.className = 'timetable-cell';
+                    cell.dataset.day = day.name;
+                    cell.dataset.time = timeObj.time;
+                    cell.dataset.shift = timeObj.shift;
+                    cell.dataset.date = day.date;
+                    
+                    if (isEditable) {
+                        cell.addEventListener('click', function() {
+                            openEditModal(day.name, timeObj.time, day.date);
+                        });
+                    }
+                    
+                    const cellContent = document.createElement('div');
+                    cellContent.className = 'timetable-cell-content';
+                    cell.appendChild(cellContent);
+                    
+                    container.appendChild(cell);
+                });
+            });
+            
+            // Update grid template for weekly view
+            container.style.gridTemplateColumns = '80px repeat(5, 1fr)';
+        }
+        
+        // Generate monthly view
+        function generateMonthlyView(container, isEditable) {
+            // Get month days
+            const monthDays = getMonthDays(currentYear, currentMonth);
+            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+            
+            // Create a grid for the month
+            container.style.gridTemplateColumns = 'repeat(7, 1fr)';
+            
+            // Add day headers
+            const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayHeaders.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'timetable-header';
+                header.textContent = day;
+                container.appendChild(header);
+            });
+            
+            // Add empty cells for days before the first day of the month
+            for (let i = 0; i < firstDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'timetable-cell';
+                emptyCell.style.backgroundColor = 'transparent';
+                emptyCell.style.border = 'none';
+                container.appendChild(emptyCell);
+            }
+            
+            // Add cells for each day of the month
+            monthDays.forEach(day => {
+                const cell = document.createElement('div');
+                cell.className = 'timetable-cell';
+                cell.style.minHeight = '120px';
+                cell.style.flexDirection = 'column';
+                cell.style.alignItems = 'flex-start';
+                cell.style.padding = '8px';
+                cell.dataset.date = day.date;
+                
+                // Add day number
+                const dayNumber = document.createElement('div');
+                dayNumber.style.fontWeight = 'bold';
+                dayNumber.style.marginBottom = '5px';
+                dayNumber.textContent = day.day;
+                cell.appendChild(dayNumber);
+                
+                // Add activities for this day
+                const activitiesContainer = document.createElement('div');
+                activitiesContainer.style.width = '100%';
+                activitiesContainer.style.fontSize = '0.8rem';
+                
+                // Get activities for this day
+                const dayActivities = getActivitiesForDay(day.date);
+                dayActivities.forEach(activity => {
+                    const activityDiv = document.createElement('div');
+                    activityDiv.style.marginBottom = '3px';
+                    activityDiv.style.padding = '2px 5px';
+                    activityDiv.style.borderRadius = '4px';
+                    activityDiv.style.fontSize = '0.7rem';
+                    activityDiv.style.whiteSpace = 'nowrap';
+                    activityDiv.style.overflow = 'hidden';
+                    activityDiv.style.textOverflow = 'ellipsis';
+                    
+                    // Set color based on activity type
+                    switch(activity.type) {
+                        case 'available':
+                            activityDiv.style.backgroundColor = 'var(--available-color)';
+                            break;
+                        case 'booked':
+                            activityDiv.style.backgroundColor = 'var(--booked-color)';
+                            break;
+                        case 'meeting':
+                            activityDiv.style.backgroundColor = 'var(--meeting-color)';
+                            break;
+                        case 'task':
+                            activityDiv.style.backgroundColor = 'var(--task-color)';
+                            break;
+                        case 'break':
+                            activityDiv.style.backgroundColor = 'var(--break-color)';
+                            break;
+                    }
+                    
+                    activityDiv.style.color = 'white';
+                    activityDiv.textContent = `${activity.time}: ${activity.description || activity.typeLabel}`;
+                    activitiesContainer.appendChild(activityDiv);
+                });
+                
+                cell.appendChild(activitiesContainer);
+                
+                if (isEditable) {
+                    cell.addEventListener('click', function() {
+                        openDayActivitiesModal(day.date);
+                    });
+                }
+                
+                // Highlight today
+                if (day.isToday) {
+                    cell.style.border = '2px solid var(--primary)';
+                }
+                
+                container.appendChild(cell);
+            });
+        }
+        
+        // Get activities for a specific day
+        function getActivitiesForDay(date) {
+            const activities = [];
+            const dayName = getDayName(new Date(date));
+            
+            times.forEach(timeObj => {
+                const key = `${dayName}_${timeObj.time}_${date}`;
+                if (timetableData[key]) {
+                    const activity = timetableData[key];
+                    activities.push({
+                        time: timeObj.time,
+                        type: activity.type,
+                        typeLabel: activity.typeLabel,
+                        description: activity.description
+                    });
+                }
+            });
+            
+            return activities;
+        }
+        
+        // Open modal to edit activities for a specific day (monthly view)
+        function openDayActivitiesModal(date) {
+            const dayName = getDayName(new Date(date));
+            
+            // Create modal HTML
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.id = 'dayActivitiesModal';
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            modal.style.display = 'flex';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+            modal.style.zIndex = '1000';
+            modal.style.animation = 'fadeIn 0.3s ease';
+            
+            const modalContent = document.createElement('div');
+            modalContent.className = 'card';
+            modalContent.style.maxWidth = '800px';
+            modalContent.style.width = '90%';
+            modalContent.style.maxHeight = '90vh';
+            modalContent.style.overflow = 'auto';
+            modalContent.style.animation = 'slideUp 0.3s ease';
+            
+            modalContent.innerHTML = `
+                <div class="modal-header">
+                    <h3 class="modal-title">Activities for ${dayName}, ${date}</h3>
+                    <button class="modal-close" onclick="closeModal('dayActivitiesModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="timetable-grid" id="dayActivitiesGrid">
+                        <!-- Grid will be populated here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-light" onclick="closeModal('dayActivitiesModal')">Close</button>
+                </div>
+            `;
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Generate day activities grid
+            generateDayActivitiesGrid(date);
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeModal('dayActivitiesModal');
+                }
+            });
+        }
+        
+        // Generate grid for day activities modal
+        function generateDayActivitiesGrid(date) {
+            const container = document.getElementById('dayActivitiesGrid');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            container.style.gridTemplateColumns = '80px 1fr';
+            
+            const dayName = getDayName(new Date(date));
+            
+            // Add header row
+            const headerCell = document.createElement('div');
+            headerCell.className = 'timetable-header';
+            headerCell.textContent = 'Time';
+            container.appendChild(headerCell);
+            
+            const dayHeader = document.createElement('div');
+            dayHeader.className = 'timetable-header';
+            dayHeader.textContent = dayName;
+            container.appendChild(dayHeader);
+            
+            // Add time slots
+            times.forEach(timeObj => {
+                // Time label
+                const timeCell = document.createElement('div');
+                timeCell.className = 'timetable-time';
+                timeCell.innerHTML = `${timeObj.time} <span class="shift-indicator shift-${timeObj.shift}">${timeObj.shift}</span>`;
+                container.appendChild(timeCell);
+                
+                // Day cell
+                const cell = document.createElement('div');
+                cell.className = 'timetable-cell';
+                cell.dataset.day = dayName;
+                cell.dataset.time = timeObj.time;
+                cell.dataset.shift = timeObj.shift;
+                cell.dataset.date = date;
+                
+                cell.addEventListener('click', function() {
+                    openEditModal(dayName, timeObj.time, date);
+                });
+                
+                const cellContent = document.createElement('div');
+                cellContent.className = 'timetable-cell-content';
+                cell.appendChild(cellContent);
+                
+                container.appendChild(cell);
+            });
+            
+            // Update the timetable data in the grid
+            updateDayActivitiesGrid();
+        }
+        
+        // Update day activities grid
+        function updateDayActivitiesGrid() {
+            const container = document.getElementById('dayActivitiesGrid');
+            if (!container) return;
+            
+            const cells = container.querySelectorAll('.timetable-cell');
+            
+            cells.forEach(cell => {
+                const day = cell.dataset.day;
+                const time = cell.dataset.time;
+                const date = cell.dataset.date;
+                const cellContent = cell.querySelector('.timetable-cell-content');
+                
+                const key = `${day}_${time}_${date}`;
+                if (timetableData[key]) {
+                    const activity = timetableData[key];
+                    cell.className = `timetable-cell ${activity.type}`;
+                    cellContent.innerHTML = `<strong>${activity.typeLabel}</strong><br>${activity.description || ''}`;
+                } else {
+                    cell.className = 'timetable-cell available';
+                    cellContent.textContent = 'Available';
+                }
+            });
+        }
+        
+        // View navigation functions
+        function changeView(view) {
+            currentView = view;
+            
+            // Update active button
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`${view}ViewBtn`).classList.add('active');
+            
+            // Update date display
+            updateDateDisplay();
+            
+            // Regenerate timetable grids
+            generateTimetableGrid('editTimetableGrid', true);
+            generateTimetableGrid('viewTimetableGrid', false);
+            
+            // Load timetable data
+            loadTimetable();
+            
+            showNotification(`Switched to ${view} view`);
+        }
+        
+        function navigatePeriod(direction) {
+            if (currentView === 'daily') {
+                if (direction === 'prev') {
+                    currentDate.setDate(currentDate.getDate() - 1);
+                } else {
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+            } else if (currentView === 'weekly') {
+                if (direction === 'prev') {
+                    currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+                } else {
+                    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+                }
+            } else if (currentView === 'monthly') {
+                if (direction === 'prev') {
+                    currentMonth--;
+                    if (currentMonth < 0) {
+                        currentMonth = 11;
+                        currentYear--;
+                    }
+                } else {
+                    currentMonth++;
+                    if (currentMonth > 11) {
+                        currentMonth = 0;
+                        currentYear++;
+                    }
+                }
+            }
+            
+            updateDateDisplay();
+            generateTimetableGrid('editTimetableGrid', true);
+            generateTimetableGrid('viewTimetableGrid', false);
+            loadTimetable();
+        }
+        
+        function goToToday() {
+            const today = new Date();
+            
+            if (currentView === 'daily') {
+                currentDate = today;
+            } else if (currentView === 'weekly') {
+                currentWeekStart = getWeekStart(today);
+            } else if (currentView === 'monthly') {
+                currentMonth = today.getMonth();
+                currentYear = today.getFullYear();
+            }
+            
+            updateDateDisplay();
+            generateTimetableGrid('editTimetableGrid', true);
+            generateTimetableGrid('viewTimetableGrid', false);
+            loadTimetable();
+            
+            showNotification('Navigated to today');
+        }
+        
+        function updateDateDisplay() {
+            const display = document.getElementById('currentDateDisplay');
+            
+            if (currentView === 'daily') {
+                display.textContent = formatDate(currentDate);
+            } else if (currentView === 'weekly') {
+                const weekEnd = new Date(currentWeekStart);
+                weekEnd.setDate(weekEnd.getDate() + 4);
+                display.textContent = `${formatDate(currentWeekStart)} - ${formatDate(weekEnd)}`;
+            } else if (currentView === 'monthly') {
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                                  'July', 'August', 'September', 'October', 'November', 'December'];
+                display.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+            }
+        }
+        
+        // Helper functions for date handling
+        function getWeekStart(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is Sunday
+            return new Date(d.setDate(diff));
+        }
+        
+        function getWeekDays(weekStart) {
+            const days = [];
+            const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+            
+            for (let i = 0; i < 5; i++) {
+                const date = new Date(weekStart);
+                date.setDate(date.getDate() + i);
+                days.push({
+                    name: dayNames[i],
+                    date: formatDate(date)
+                });
+            }
+            
+            return days;
+        }
+        
+        function getMonthDays(year, month) {
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+            const days = [];
+            
+            for (let i = 1; i <= daysInMonth; i++) {
+                const date = new Date(year, month, i);
+                days.push({
+                    day: i,
+                    date: formatDate(date),
+                    isToday: date.toDateString() === today.toDateString()
+                });
+            }
+            
+            return days;
+        }
+        
+        function formatDate(date) {
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        function getDayName(date) {
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            return days[date.getDay()];
+        }
+        
+        // Load timetable data
+        function loadTimetable() {
+            const savedData = localStorage.getItem(`timetable_${currentUser}`);
+            if (savedData) {
+                timetableData = JSON.parse(savedData);
+            } else {
+                timetableData = {};
+            }
+            
+            // Update both grids
+            updateTimetableGrid('editTimetableGrid');
+            updateTimetableGrid('viewTimetableGrid');
+            
+            // Update day activities grid if it exists
+            updateDayActivitiesGrid();
+        }
+        
+        // Update timetable grid display
+        function updateTimetableGrid(containerId) {
+            const container = document.getElementById(containerId);
+            const cells = container.querySelectorAll('.timetable-cell');
+            
+            cells.forEach(cell => {
+                const day = cell.dataset.day;
+                const time = cell.dataset.time;
+                const date = cell.dataset.date || '';
+                const cellContent = cell.querySelector('.timetable-cell-content');
+                
+                // Try multiple key formats to find the activity
+                let activity = null;
+                const keysToTry = [
+                    date ? `${day}_${time}_${date}` : '',
+                    `${day}_${time}`,
+                    date ? `${day}_${time}_${date.replace(/-/g, '')}` : '',
+                    date ? `${day}_${time}_${date.replace(/-/g, '/')}` : ''
+                ];
+                
+                for (const key of keysToTry) {
+                    if (key && timetableData[key]) {
+                        activity = timetableData[key];
+                        break;
+                    }
+                }
+                
+                if (activity) {
+                    cell.className = `timetable-cell ${activity.type}`;
+                    cellContent.innerHTML = `<strong>${activity.typeLabel}</strong><br>${activity.description || ''}`;
+                } else {
+                    cell.className = 'timetable-cell available';
+                    cellContent.textContent = 'Available';
+                }
+            });
+        }
+        
+        // Open edit modal
+        function openEditModal(day, time, date = '') {
+            const key = date ? `${day}_${time}_${date}` : `${day}_${time}`;
+            const existingActivity = timetableData[key] || { type: 'available', description: '' };
+            
+            // Create modal HTML
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.id = 'editModal';
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            modal.style.display = 'flex';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+            modal.style.zIndex = '1000';
+            modal.style.animation = 'fadeIn 0.3s ease';
+            
+            const modalContent = document.createElement('div');
+            modalContent.className = 'card';
+            modalContent.style.maxWidth = '550px';
+            modalContent.style.width = '90%';
+            modalContent.style.animation = 'slideUp 0.3s ease';
+            
+            const title = date ? `Edit ${day}, ${date} at ${time}` : `Edit ${day} at ${time}`;
+            
+            modalContent.innerHTML = `
+                <h2 style="margin-bottom: 25px;">${title}</h2>
+                <div class="form-group">
+                    <label for="activityType">Activity Type</label>
+                    <select id="activityType" class="form-control">
+                        ${activityTypes.map(type => 
+                            `<option value="${type.value}" ${existingActivity.type === type.value ? 'selected' : ''}>${type.label}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="activityDescription">Description</label>
+                    <textarea id="activityDescription" class="form-control" rows="3">${existingActivity.description || ''}</textarea>
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button class="btn btn-light" onclick="closeModal('editModal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveActivity('${day}', '${time}', '${date}')">Save</button>
+                </div>
+            `;
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeModal('editModal');
+                }
+            });
+        }
+        
+        // Save activity
+        function saveActivity(day, time, date = '') {
+            const type = document.getElementById('activityType').value;
+            const description = document.getElementById('activityDescription').value;
+            
+            const typeLabel = activityTypes.find(t => t.value === type).label;
+            
+            const key = date ? `${day}_${time}_${date}` : `${day}_${time}`;
+            timetableData[key] = {
+                type,
+                typeLabel,
+                description
+            };
+            
+            // Close modal first
+            closeModal('editModal');
+            
+            // Then update the grids
+            updateTimetableGrid('editTimetableGrid');
+            updateTimetableGrid('viewTimetableGrid');
+            updateDayActivitiesGrid();
+            
+            // Show notification
+            showNotification('Activity saved successfully!');
+        }
+        
+        // Close modal
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(modal);
+                }, 300);
+            }
+        }
+        
+        // Save timetable
+        function saveTimetable() {
+            localStorage.setItem(`timetable_${currentUser}`, JSON.stringify(timetableData));
+            showNotification('Timetable saved successfully!');
+        }
+        
+        // Clear timetable
+        function clearTimetable() {
+            if (confirm('Are you sure you want to clear your entire timetable?')) {
+                timetableData = {};
+                updateTimetableGrid('editTimetableGrid');
+                updateTimetableGrid('viewTimetableGrid');
+                updateDayActivitiesGrid();
+                showNotification('Timetable cleared!');
+            }
+        }
+        
+        // Search timetable
+        function searchTimetable() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            if (!searchTerm) {
+                showNotification('Please enter a search term');
+                return;
+            }
+            
+            const container = document.getElementById('viewTimetableGrid');
+            const cells = container.querySelectorAll('.timetable-cell');
+            
+            let found = false;
+            cells.forEach(cell => {
+                const cellContent = cell.querySelector('.timetable-cell-content');
+                const text = cellContent.textContent.toLowerCase();
+                
+                if (text.includes(searchTerm)) {
+                    cell.style.border = '3px solid var(--warning)';
+                    cell.style.animation = 'pulse 1s infinite';
+                    found = true;
+                } else {
+                    cell.style.border = '';
+                    cell.style.animation = '';
+                }
+            });
+            
+            if (found) {
+                showNotification(`Found activities matching "${searchTerm}"`);
+            } else {
+                showNotification(`No activities found matching "${searchTerm}"`);
+            }
+        }
+        
+        // Clear search
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            const container = document.getElementById('viewTimetableGrid');
+            const cells = container.querySelectorAll('.timetable-cell');
+            
+            cells.forEach(cell => {
+                cell.style.border = '';
+                cell.style.animation = '';
+            });
+            
+            // Reset filters
+            document.getElementById('activityFilter').value = 'all';
+            document.getElementById('shiftFilter').value = 'all';
+            
+            showNotification('Search cleared');
+        }
+        
+        // Filter by activity type
+        function filterByActivity() {
+            const activityType = document.getElementById('activityFilter').value;
+            const container = document.getElementById('viewTimetableGrid');
+            const cells = container.querySelectorAll('.timetable-cell');
+            
+            cells.forEach(cell => {
+                if (activityType === 'all') {
+                    cell.style.display = '';
+                    cell.style.animation = '';
+                } else if (cell.classList.contains(activityType)) {
+                    cell.style.display = '';
+                    cell.style.animation = 'fadeIn 0.5s ease';
+                } else {
+                    cell.style.display = 'none';
+                }
+            });
+            
+            showNotification(`Filtered by ${activityType === 'all' ? 'all activities' : activityType}`);
+        }
+        
+        // Filter by shift
+        function filterByShift() {
+            const shift = document.getElementById('shiftFilter').value;
+            const container = document.getElementById('viewTimetableGrid');
+            const timeCells = container.querySelectorAll('.timetable-time');
+            const dayCells = container.querySelectorAll('.timetable-cell');
+            
+            // First, show all cells
+            dayCells.forEach(cell => {
+                cell.style.display = '';
+                cell.style.animation = '';
+            });
+            timeCells.forEach(cell => {
+                cell.style.display = '';
+            });
+            
+            // Then hide cells that don't match the shift
+            if (shift !== 'all') {
+                timeCells.forEach((timeCell, index) => {
+                    const timeObj = times.find(t => t.time === timeCell.textContent.trim().split(' ')[0]);
+                    if (timeObj && timeObj.shift !== shift) {
+                        // Hide the time cell and all corresponding day cells
+                        timeCell.style.display = 'none';
+                        
+                        // Calculate the index of the first day cell for this time
+                        const startIndex = (index + 1) * 6; // +1 for header row, *6 for 5 days + time column
+                        const endIndex = startIndex + 5;
+                        
+                        for (let i = startIndex; i < endIndex; i++) {
+                            if (dayCells[i]) {
+                                dayCells[i].style.display = 'none';
+                            }
+                        }
+                    }
+                });
+            }
+            
+            showNotification(`Filtered by ${shift === 'all' ? 'all shifts' : shift + ' shift'}`);
+        }
+        
+        // Export to PDF
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Add title
+            doc.setFontSize(18);
+            doc.text(`Weekly Timetable - ${currentUser}`, 105, 15, { align: 'center' });
+            
+            // Prepare data for the table
+            const tableData = [];
+            const headers = ['Time', ...days];
+            
+            times.forEach(timeObj => {
+                const row = [timeObj.time];
+                days.forEach(day => {
+                    const key = `${day}_${timeObj.time}`;
+                    if (timetableData[key]) {
+                        const activity = timetableData[key];
+                        row.push(`${activity.typeLabel}: ${activity.description || ''}`);
+                    } else {
+                        row.push('Available');
+                    }
+                });
+                tableData.push(row);
+            });
+            
+            // Add table
+            doc.autoTable({
+                head: [headers],
+                body: tableData,
+                startY: 25,
+                theme: 'grid',
+                styles: {
+                    fontSize: 8,
+                    cellPadding: 3
+                },
+                headStyles: {
+                    fillColor: [99, 102, 241],
+                    textColor: 255
+                }
+            });
+            
+            // Save the PDF
+            doc.save(`${currentUser}_Timetable.pdf`);
+            showNotification('Timetable exported to PDF!');
+        }
+        
+        // Toggle theme
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (html.getAttribute('data-theme') === 'dark') {
+                html.removeAttribute('data-theme');
+                themeIcon.className = 'fas fa-moon';
+                localStorage.removeItem('theme');
+            } else {
+                html.setAttribute('data-theme', 'dark');
+                themeIcon.className = 'fas fa-sun';
+                localStorage.setItem('theme', 'dark');
+            }
+            
+            // Force update of theme colors
+            updateThemeColors();
+        }
+        
+        // Update theme colors for all elements
+        function updateThemeColors() {
+            // This function ensures all elements update their colors when theme changes
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            
+            // Update all elements that use CSS variables
+            document.querySelectorAll('*').forEach(element => {
+                // Force reflow to apply new theme
+                element.style.display = 'none';
+                element.offsetHeight; // Trigger reflow
+                element.style.display = '';
+            });
+            
+            // Update particles
+            const particles = document.querySelectorAll('.particle');
+            particles.forEach(particle => {
+                if (isDark) {
+                    particle.style.opacity = '0.6';
+                } else {
+                    particle.style.opacity = '0.8';
+                }
+            });
+        }
+        
+        // Show notification
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Staff management functions
+        function loadStaffList() {
+            const savedStaff = localStorage.getItem('staffList');
+            if (savedStaff) {
+                staffList = JSON.parse(savedStaff);
+            } else {
+                staffList = [currentUser]; // Add current user as default staff
+            }
+            renderStaffList();
+        }
+        
+        function renderStaffList() {
+            const container = document.getElementById('staffList');
+            container.innerHTML = '';
+            
+            staffList.forEach(staff => {
+                const staffItem = document.createElement('div');
+                staffItem.className = 'staff-item';
+                staffItem.innerHTML = `
+                    <span>${staff}</span>
+                    <div>
+                        ${staff !== currentUser ? 
+                            `<button onclick="editStaff('${staff}')" title="Edit"><i class="fas fa-edit"></i></button>
+                             <button onclick="confirmDeleteStaff('${staff}')" title="Remove"><i class="fas fa-times"></i></button>` : 
+                            '<span style="color: rgba(255,255,255,0.7);">(You)</span>'
+                        }
+                    </div>
+                `;
+                container.appendChild(staffItem);
+            });
+        }
+        
+        function addStaff() {
+            const newStaffInput = document.getElementById('newStaff');
+            const newStaffName = newStaffInput.value.trim();
+            
+            if (newStaffName && !staffList.includes(newStaffName)) {
+                staffList.push(newStaffName);
+                localStorage.setItem('staffList', JSON.stringify(staffList));
+                renderStaffList();
+                newStaffInput.value = '';
+                showNotification(`${newStaffName} added to staff list`);
+            } else if (staffList.includes(newStaffName)) {
+                showNotification('This staff member already exists');
+            } else {
+                showNotification('Please enter a valid staff name');
+            }
+        }
+        
+        function editStaff(staffName) {
+            // Create modal for editing staff
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.id = 'staffEditModal';
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            modal.style.display = 'flex';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+            modal.style.zIndex = '1000';
+            
+            const modalContent = document.createElement('div');
+            modalContent.className = 'card';
+            modalContent.style.maxWidth = '400px';
+            modalContent.style.width = '90%';
+            
+            modalContent.innerHTML = `
+                <div class="modal-header">
+                    <h3 class="modal-title">Edit Staff Name</h3>
+                    <button class="modal-close" onclick="closeModal('staffEditModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="staff-edit-form">
+                        <input type="text" id="editStaffName" class="form-control" value="${staffName}" placeholder="Enter staff name">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-light" onclick="closeModal('staffEditModal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveStaffEdit('${staffName}')">Save</button>
+                </div>
+            `;
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Focus on input
+            setTimeout(() => {
+                document.getElementById('editStaffName').focus();
+                document.getElementById('editStaffName').select();
+            }, 100);
+        }
+        
+        function saveStaffEdit(oldStaffName) {
+            const newStaffName = document.getElementById('editStaffName').value.trim();
+            
+            if (newStaffName && newStaffName !== oldStaffName && !staffList.includes(newStaffName)) {
+                // Update staff name in the list
+                const index = staffList.indexOf(oldStaffName);
+                if (index !== -1) {
+                    staffList[index] = newStaffName;
+                    localStorage.setItem('staffList', JSON.stringify(staffList));
+                    renderStaffList();
+                    showNotification(`Staff name updated to ${newStaffName}`);
+                }
+                closeModal('staffEditModal');
+            } else if (!newStaffName) {
+                showNotification('Please enter a valid staff name');
+            } else if (newStaffName === oldStaffName) {
+                showNotification('No changes made');
+                closeModal('staffEditModal');
+            } else if (staffList.includes(newStaffName)) {
+                showNotification('This staff name already exists');
+            }
+        }
+        
+        function confirmDeleteStaff(staffName) {
+            // Create confirmation modal
+            const modal = document.createElement('div');
+            modal.className = 'modal confirmation-modal';
+            modal.id = 'confirmationModal';
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            modal.style.display = 'flex';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+            modal.style.zIndex = '1000';
+            
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            modalContent.innerHTML = `
+                <div class="modal-header">
+                    <h3 class="modal-title">Confirm Delete</h3>
+                    <button class="modal-close" onclick="closeModal('confirmationModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Are you sure you want to remove ${staffName}?</h3>
+                    <p>This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-light" onclick="closeModal('confirmationModal')">Cancel</button>
+                    <button class="btn btn-danger" onclick="deleteStaff('${staffName}')">Delete</button>
+                </div>
+            `;
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+        }
+        
+        function deleteStaff(staffName) {
+            // Remove staff from list
+            staffList = staffList.filter(staff => staff !== staffName);
+            localStorage.setItem('staffList', JSON.stringify(staffList));
+            renderStaffList();
+            
+            // Close modal
+            closeModal('confirmationModal');
+            
+            // Show notification
+            showNotification(`${staffName} removed from staff list`);
+        }
+        
+        // Time management functions
+        function openTimeManagementModal() {
+            // Create modal HTML
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.id = 'timeManagementModal';
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            modal.style.display = 'flex';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+            modal.style.zIndex = '1000';
+            modal.style.padding = '20px';
+            
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            modalContent.innerHTML = `
+                <div class="modal-header">
+                    <h3 class="modal-title">Manage Timetable Timings</h3>
+                    <button class="modal-close" onclick="closeModal('timeManagementModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="time-list" id="timeList">
+                        <!-- Time list will be populated here -->
+                    </div>
+                    <div class="add-time-form">
+                        <input type="text" id="newTime" class="form-control" placeholder="e.g., 9:00 AM">
+                        <select id="newShift" class="form-control">
+                            <option value="morning">Morning</option>
+                            <option value="afternoon">Afternoon</option>
+                            <option value="evening">Evening</option>
+                            <option value="night">Night</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="addTime()">Add Time</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-light" onclick="closeModal('timeManagementModal')">Close</button>
+                    <button class="btn btn-primary" onclick="saveTimes()">Save Changes</button>
+                </div>
+            `;
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Populate time list
+            renderTimeList();
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeModal('timeManagementModal');
+                }
+            });
+        }
+        
+        function renderTimeList() {
+            const timeList = document.getElementById('timeList');
+            if (!timeList) return;
+            
+            timeList.innerHTML = '';
+            
+            times.forEach((timeObj, index) => {
+                const timeItem = document.createElement('div');
+                timeItem.className = 'time-item';
+                timeItem.innerHTML = `
+                    <div class="time-info">
+                        <span>${timeObj.time}</span>
+                        <span class="shift-indicator shift-${timeObj.shift}">${timeObj.shift}</span>
+                    </div>
+                    <div class="time-actions">
+                        <button onclick="editTime(${index})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteTime(${index})" class="delete" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                timeList.appendChild(timeItem);
+            });
+        }
+        
+        function addTime() {
+            const newTimeInput = document.getElementById('newTime');
+            const newShiftSelect = document.getElementById('newShift');
+            
+            const newTime = newTimeInput.value.trim();
+            const newShift = newShiftSelect.value;
+            
+            if (newTime && newShift) {
+                // Check if time already exists
+                const timeExists = times.some(t => t.time === newTime);
+                if (timeExists) {
+                    showNotification('This time slot already exists');
+                    return;
+                }
+                
+                times.push({ time: newTime, shift: newShift });
+                renderTimeList();
+                newTimeInput.value = '';
+                showNotification('Time slot added successfully!');
+            } else {
+                showNotification('Please enter a valid time and select a shift');
+            }
+        }
+        
+        function editTime(index) {
+            const timeObj = times[index];
+            
+            // Create modal for editing time
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.id = 'timeEditModal';
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            modal.style.display = 'flex';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+            modal.style.zIndex = '1001'; // Higher z-index than parent modal
+            
+            const modalContent = document.createElement('div');
+            modalContent.className = 'card';
+            modalContent.style.maxWidth = '400px';
+            modalContent.style.width = '90%';
+            
+            modalContent.innerHTML = `
+                <div class="modal-header">
+                    <h3 class="modal-title">Edit Time Slot</h3>
+                    <button class="modal-close" onclick="closeModal('timeEditModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="editTimeValue">Time</label>
+                        <input type="text" id="editTimeValue" class="form-control" value="${timeObj.time}" placeholder="e.g., 9:00 AM">
+                    </div>
+                    <div class="form-group">
+                        <label for="editTimeShift">Shift</label>
+                        <select id="editTimeShift" class="form-control">
+                            <option value="morning" ${timeObj.shift === 'morning' ? 'selected' : ''}>Morning</option>
+                            <option value="afternoon" ${timeObj.shift === 'afternoon' ? 'selected' : ''}>Afternoon</option>
+                            <option value="evening" ${timeObj.shift === 'evening' ? 'selected' : ''}>Evening</option>
+                            <option value="night" ${timeObj.shift === 'night' ? 'selected' : ''}>Night</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-light" onclick="closeModal('timeEditModal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveTimeEdit(${index})">Save</button>
+                </div>
+            `;
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Focus on input
+            setTimeout(() => {
+                document.getElementById('editTimeValue').focus();
+                document.getElementById('editTimeValue').select();
+            }, 100);
+        }
+        
+        function saveTimeEdit(index) {
+            const newTime = document.getElementById('editTimeValue').value.trim();
+            const newShift = document.getElementById('editTimeShift').value;
+            
+            if (newTime && newShift) {
+                // Check if time already exists (excluding current time)
+                const timeExists = times.some((t, i) => i !== index && t.time === newTime);
+                if (timeExists) {
+                    showNotification('This time slot already exists');
+                    return;
+                }
+                
+                // Update the time in the times array
+                times[index].time = newTime;
+                times[index].shift = newShift;
+                
+                // Re-render the time list in the modal
+                renderTimeList();
+                
+                // Close the edit modal
+                closeModal('timeEditModal');
+                
+                showNotification('Time slot updated successfully!');
+            } else {
+                showNotification('Please enter a valid time and select a shift');
+            }
+        }
+        
+        function deleteTime(index) {
+            if (confirm('Are you sure you want to delete this time slot?')) {
+                times.splice(index, 1);
+                renderTimeList();
+                showNotification('Time slot deleted successfully!');
+            }
+        }
+        
+        function saveTimes() {
+            // Save the updated times to localStorage
+            saveUserTimes();
+            
+            // Migrate timetable data to match new time structure
+            const newTimetableData = {};
+            
+            // For each new time, check if there's existing data and migrate it
+            times.forEach(timeObj => {
+                days.forEach(day => {
+                    const key = `${day}_${timeObj.time}`;
+                    
+                    // Check if there's data for this exact time
+                    if (timetableData[key]) {
+                        newTimetableData[key] = timetableData[key];
+                    } else {
+                        // If no exact match, check for similar times (case insensitive, normalized)
+                        const normalizedTime = timeObj.time.toLowerCase().replace(/\s/g, '');
+                        let found = false;
+                        
+                        // Look for similar time in existing data
+                        for (const existingKey in timetableData) {
+                            const existingTime = existingKey.split('_')[1];
+                            const normalizedExistingTime = existingTime.toLowerCase().replace(/\s/g, '');
+                            
+                            if (normalizedTime === normalizedExistingTime && existingKey.startsWith(day)) {
+                                // Found a similar time, migrate the data
+                                newTimetableData[key] = timetableData[existingKey];
+                                found = true;
+                                break;
+                            }
+                        }
+                        
+                        // If no similar time found, set as available
+                        if (!found) {
+                            newTimetableData[key] = {
+                                type: 'available',
+                                typeLabel: 'Available',
+                                description: ''
+                            };
+                        }
+                    }
+                });
+            });
+            
+            // Update the timetable data
+            timetableData = newTimetableData;
+            
+            // Save the updated timetable data
+            localStorage.setItem(`timetable_${currentUser}`, JSON.stringify(timetableData));
+            
+            // Regenerate both timetable grids with the new times
+            generateTimetableGrid('editTimetableGrid', true);
+            generateTimetableGrid('viewTimetableGrid', false);
+            
+            // Update the timetable data in the grids
+            updateTimetableGrid('editTimetableGrid');
+            updateTimetableGrid('viewTimetableGrid');
+            
+            // Close the modal
+            closeModal('timeManagementModal');
+            
+            // Show notification
+            showNotification('Timetable timings saved successfully!');
+        }
+        
+        // Save current week's data when logging out
+        window.addEventListener('beforeunload', function() {
+            if (currentUser) {
+                localStorage.setItem(`timetable_${currentUser}`, JSON.stringify(timetableData));
+                localStorage.setItem('staffList', JSON.stringify(staffList));
+                saveUserTimes();
+            }
+        });
+        
+        // Add fadeOut animation for modals
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
